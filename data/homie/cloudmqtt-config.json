@@ -1,0 +1,18 @@
+{
+    "name": "Temperature and Humidity",
+    "wifi": {
+      "ssid": "2Ghz",
+      "password": "4058520201"
+    },
+    "mqtt": {
+        "host": "m20.cloudmqtt.com",
+        "port": 16862,
+        "base_topic": "devices/",
+        "auth": true,
+        "username": "uhahzcmy",
+        "password": "MLWdE8ibD66Q"
+    },
+    "ota": {
+      "enabled": false
+    }
+  }
