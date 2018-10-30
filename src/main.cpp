@@ -53,10 +53,10 @@ SSD1306  display(0x3C, 5, 4); // (I2C Address, SCL Pin, SDA Pin)
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 
 
-const int TEMPERATURE_INTERVAL = 30;
+const int TEMPERATURE_INTERVAL = 1;
 unsigned long last_temperature_sent = 0;
 
-const int HUMIDITY_INTERVAL = 30;
+const int HUMIDITY_INTERVAL = 1;
 unsigned long last_humidity_sent = 0;
 String display_temp;
 String display_humid;
@@ -74,7 +74,7 @@ void setupHandler() {
 
 void getSendTemperature() {
   if (millis() - last_temperature_sent >= TEMPERATURE_INTERVAL * 1000UL || last_temperature_sent == 0) {
-    float temperature = dht.readTemperature(false);
+    float temperature = dht.readTemperature(false); // true/false --- Fahrenheit/Celius
 
     if (isnan(temperature)) {
       Serial.println("Failed to read from DHT sensor!");
@@ -132,6 +132,7 @@ void loopHandler() {
 }
 
 void setup() {
+  Homie.setLedPin(16, LOW); //Onboard built-in LED on pin 16 --- Slow blink connecting WiFi / Fast blink connecting MQTT server / LOW (off when connected)
   Serial.begin(115200);
   Serial << endl << endl;
 
