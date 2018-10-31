@@ -1,0 +1,15 @@
+{
+    "name": "Temperature and Humidity",
+    "wifi": {
+      "ssid": "2Ghz",
+      "password": "4058520201"
+    },
+    "mqtt": {
+        "host": "new.anthill.hk",
+        "port": 1883,
+        "base_topic": "devices/"
+    },
+    "ota": {
+      "enabled": true
+    }
+  }

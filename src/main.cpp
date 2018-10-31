@@ -41,6 +41,14 @@ void loop() {
 #include <DHT.h>
 #include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
 
+#define FW_NAME "Awesome-Temperature"
+#define FW_VERSION "1.0.2"
+
+/* Magic sequence for Autodetectable Binary Upload */
+const char *__FLAGGED_FW_NAME = "\xbf\x84\xe4\x13\x54" FW_NAME "\x93\x44\x6b\xa7\x75";
+const char *__FLAGGED_FW_VERSION = "\x6a\x3f\x3e\x0e\xe1" FW_VERSION "\xb0\x30\x48\xd4\x1a";
+/* End of magic sequence for Autodetectable Binary Upload */
+
 
 #define DHTPIN 14     // what pin the DHT is connected to
 
@@ -53,10 +61,10 @@ SSD1306  display(0x3C, 5, 4); // (I2C Address, SCL Pin, SDA Pin)
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 
 
-const int TEMPERATURE_INTERVAL = 1;
+const int TEMPERATURE_INTERVAL = 5;
 unsigned long last_temperature_sent = 0;
 
-const int HUMIDITY_INTERVAL = 1;
+const int HUMIDITY_INTERVAL = 5;
 unsigned long last_humidity_sent = 0;
 String display_temp;
 String display_humid;
@@ -137,7 +145,7 @@ void setup() {
   Serial << endl << endl;
 
 
-  Homie_setFirmware("awesome-temperature", "1.0.0");
+  Homie_setFirmware(FW_NAME, FW_VERSION);
   
   Homie.setSetupFunction(setupHandler);
   Homie.setLoopFunction(loopHandler);
