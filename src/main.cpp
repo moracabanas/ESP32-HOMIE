@@ -41,8 +41,8 @@ void loop() {
 #include <DHT.h>
 #include "SSD1306.h" // alias for `#include "SSD1306Wire.h"`
 
-#define FW_NAME "Awesome-Temperature"
-#define FW_VERSION "1.0.2"
+#define FW_NAME "Awesome-Temperature_Events-test"
+#define FW_VERSION "1.1.0"
 
 /* Magic sequence for Autodetectable Binary Upload */
 const char *__FLAGGED_FW_NAME = "\xbf\x84\xe4\x13\x54" FW_NAME "\x93\x44\x6b\xa7\x75";
@@ -61,11 +61,16 @@ SSD1306  display(0x3C, 5, 4); // (I2C Address, SCL Pin, SDA Pin)
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 
 
+const int WIFI_SIGNAL_CHECK_INTERVAL = 5;
+unsigned long last_signaQuality_check = 0;
+
 const int TEMPERATURE_INTERVAL = 5;
 unsigned long last_temperature_sent = 0;
 
 const int HUMIDITY_INTERVAL = 5;
 unsigned long last_humidity_sent = 0;
+
+int8_t display_signal;
 String display_temp;
 String display_humid;
 
@@ -73,6 +78,55 @@ HomieNode temperatureNode("temperature", "temperature");
 HomieNode humidityNode("humidity", "humidity");
 
 DHT dht(DHTPIN, DHTTYPE);
+
+
+// Event handler system
+void onHomieEvent(const HomieEvent& event) {
+  switch (event.type) {
+    case HomieEventType::STANDALONE_MODE:
+      Serial << "Standalone mode started" << endl;
+      break;
+    case HomieEventType::CONFIGURATION_MODE:
+      Serial << "Configuration mode started" << endl;
+      break;
+    case HomieEventType::NORMAL_MODE:
+      Serial << "Normal mode started" << endl;
+      break;
+    case HomieEventType::OTA_STARTED:
+      Serial << "OTA started" << endl;
+      break;
+    case HomieEventType::OTA_PROGRESS:
+      Serial << "OTA progress, " << event.sizeDone << "/" << event.sizeTotal << endl;
+      break;
+    case HomieEventType::OTA_FAILED:
+      Serial << "OTA failed" << endl;
+      break;
+    case HomieEventType::OTA_SUCCESSFUL:
+      Serial << "OTA successful" << endl;
+      break;
+    case HomieEventType::ABOUT_TO_RESET:
+      Serial << "About to reset" << endl;
+      break;
+    case HomieEventType::WIFI_CONNECTED:
+      Serial << "Wi-Fi connected, IP: " << event.ip << ", gateway: " << event.gateway << ", mask: " << event.mask << endl;
+      break;
+    case HomieEventType::WIFI_DISCONNECTED:
+      Serial << "Wi-Fi disconnected"<< endl;
+      break;
+    case HomieEventType::MQTT_READY:
+      Serial << "MQTT connected" << endl;
+      break;
+    case HomieEventType::MQTT_DISCONNECTED:
+      Serial << "MQTT disconnected" << endl;
+      break;
+    case HomieEventType::MQTT_PACKET_ACKNOWLEDGED:
+      //Serial << "MQTT packet acknowledged, packetId: " << event.packetId << endl;
+      break;
+    case HomieEventType::READY_TO_SLEEP:
+      Serial << "Ready to sleep" << endl;
+      break;
+  }
+}
 
 void setupHandler() {
   // Do what you want to prepare your sensor
@@ -122,21 +176,51 @@ void getSendHumid() {
   }
 }
 
+void getWifiQuality() {
+  if (millis() - last_signaQuality_check >= WIFI_SIGNAL_CHECK_INTERVAL * 1000UL || last_signaQuality_check == 0) {
+    int32_t dbm = WiFi.RSSI();
+    
+    if(dbm <= -100) {
+        display_signal = 0;
+    } else if(dbm >= -50) {
+        display_signal = 100;
+    } else {
+        display_signal = 2 * (dbm + 100);
+    }
+    last_signaQuality_check = millis();
+  }
+}
+
+void drawWifiQuality() {
+  //display.setFont(ArialMT_Plain_10);
+  //display.setTextAlignment(TEXT_ALIGN_RIGHT);  
+  //display.drawString(91, 2, String(display_signal) + "%");
+  for (int8_t i = 0; i < 4; i++) {
+    for (int8_t j = 0; j < 2 * (i + 1); j++) {
+      if (display_signal > i * 25 || j == 0) {
+        display.setPixel(121 + 2 * i, 7 - j);
+      }
+    }
+  }
+}
+
 void displayData() {
     display.clear();
     display.setTextAlignment(TEXT_ALIGN_CENTER);
-    display.setFont(ArialMT_Plain_10);
-    display.drawString(64, 0, "Office Temp/Humidty");   
+    //display.setFont(ArialMT_Plain_10);
+    //display.drawString(64, 0, "Office Temp/Humidty");   
     display.setFont(ArialMT_Plain_24);
     display.drawString(66, 13, display_temp + "°C");
     display.drawString(66, 40, display_humid + "%");
+    drawWifiQuality();
     display.display();
 }
 
 void loopHandler() {
   getSendTemperature();
   getSendHumid(); 
-  displayData();  
+  getWifiQuality();
+  displayData();
 }
 
 void setup() {
@@ -144,9 +228,9 @@ void setup() {
   Serial.begin(115200);
   Serial << endl << endl;
 
-
+  Homie.disableLogging(); //ONLY FOR TEST EVENT HANDLER
   Homie_setFirmware(FW_NAME, FW_VERSION);
-  
+  Homie.onEvent(onHomieEvent);
   Homie.setSetupFunction(setupHandler);
   Homie.setLoopFunction(loopHandler);
   Homie.setup();

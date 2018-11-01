@@ -1,7 +1,7 @@
 {
     "name": "Temperature and Humidity",
     "wifi": {
-      "ssid": "2Ghz",
+      "ssid": "2.4Ghz",
       "password": "4058520201"
     },
     "mqtt": {
